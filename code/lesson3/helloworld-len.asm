@@ -1,38 +1,64 @@
-; Hello World Program (Calculating string length)
-; Compile with: nasm -f elf helloworld-len.asm
-; Link with (64 bit systems require elf_i386 option): ld -m elf_i386 helloworld-len.o -o helloworld-len
+; Hello World Program - asmtutor.com
+; Compile with: nasm -f elf64 helloworld-len.asm
+; Link with: ld -m elf_x86_64 helloworld-len.o -o helloworld-len
 ; Run with: ./helloworld-len
 
 SECTION .data
-msg     db      'Hello, brave new world!', 0Ah ; we can modify this now without having to update anywhere else in the program
+msg     db      'Hello, brave new world!', 0Ah, 0 ; we can modify this now without having to update anywhere else in the program
 
 SECTION .text
 global  _start
     
 _start: 
+;    mov     rdi, msg          ; store the original addr in rdi
+;    mov     rax, msg          ; store the msg addr in rax
+;
+;loop:
+;    cmp     byte [rax], 0     ; is the byte at the rax addr 0x00?
+;    je      exitloop          ; if so, jump out of the loop
+;    inc     rax               ; increment rax with by 1
+;    jmp     loop              ; go back to compare the next character
+;exitloop:
+;                              ; rax was incremented until we encountered a 
+;                              ; 0-byte. rdi still contains the original addr
+;    sub     rax, rdi          ; subtract the original addr from the new addr
+;                              ; the result is the amount of characters we had 
+;                              ; to check. It is automatically stored in rax
+;    mov     rdx, rax          ; move the result in rdx, this prepares the third
+;                              ; argument for the SYS_WRITE syscall
+;    mov     rsi, msg          ; the addr of the string, the 2e arg SYS_WRITE
+;    mov     rdi, 1            ; STDOUT the first argument for SYS_WRITE 
+;    mov     rax, 1            ; SYS_WRITE syscall number
+;    syscall                   ; writes the string to STDOUT
+;
+;    mov     rax, 60           ; SYS_EXIT code
+;    mov     rdi, 0            ; exit code 0
+;    syscall                   ; terminate the program
 
-    mov     ebx, msg        ; move the address of our message string into EBX
-    mov     eax, ebx        ; move the address in EBX into EAX as well (Both now point to the same segment in memory)
-    
-nextchar:
-    cmp     byte [eax], 0   ; compare the byte pointed to by EAX at this address against zero (Zero is an end of string delimiter)
-    jz      finished        ; jump (if the zero flagged has been set) to the point in the code labeled 'finished'
-    inc     eax             ; increment the address in EAX by one byte (if the zero flagged has NOT been set)
-    jmp     nextchar        ; jump to the point in the code labeled 'loop'
-    
-finished:
-    sub     eax, ebx        ; subtract the address in EBX from the address in EAX
-                            ; remember both registers started pointing to the same address (see line 15)
-                            ; but EAX has been incremented one byte for each character in the message string
-                            ; when you subtract one memory address from another of the same type
-                            ; the result is number of segments between them - in this case the number of bytes
-    
-    mov     edx, eax        ; EAX now equals the number of bytes in our string
-    mov     ecx, msg        ; the rest of the code should be familiar now
-    mov     ebx, 1
-    mov     eax, 4
-    int     80h
+    ; This does not get executed anymore.
+    ; An alternative more advanced way of calculating the str length using
+    ; the repne and scasb instructions.
+    ; --------------------------------------------
+    xor     al,al    ; zero out the first byte of rax
 
-    mov     ebx, 0      
-    mov     eax, 1      
-    int     80h
+    mov     rcx, 0   ;
+    dec     rcx      ; put rcx on the maximum available number
+
+    mov     rdi, msg ; put the msg addr in rbi
+repne scasb          ; repeat while(al != [rbi++])
+                     ; repne stands for repeat while negative. It only works with
+                     ; a select few instructions
+                     ; scasb checks whether rbi points to a byte that matches 
+                     ; the first byte of the rax register(al).
+
+    not     rcx      ; negate rcx
+    dec     rcx      ; decrement 1 to remove the 0-byte
+    ; end of length of string calculation
+
+    mov     rdi, msg          ; arg2 (addr) for SYS_WRITE
+    mov     rdx, rcx          ; arg3 (len) for SYS_WRITE
+    mov     
+
+    mov     rax, 60  ; SYS_EXIT code
+    mov     rdi, rcx ; put the amount of characters as the exit code
+    syscall
